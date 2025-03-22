@@ -1,61 +1,104 @@
+const express = require('express');
+const http = require('http');
 const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 3000 });
+const cors = require('cors');
+const path = require('path');
 
-const players = new Map();
+const app = express();
+app.use(cors({
+  origin: '*', // In production, you might want to restrict this
+  methods: ['GET', 'POST']
+}));
+
+// Serve static files if needed
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Basic health check endpoint for Railway
+app.get('/', (req, res) => {
+  res.send('Alien Bounce Server is running!');
+});
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+// Store connected clients
+const clients = new Map();
 
 console.log('WebSocket server started on port 3000');
 
 wss.on('connection', (ws) => {
-    const playerId = generatePlayerId();
-    console.log(`New player connected: ${playerId}`);
-    players.set(playerId, { ws, position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0 } });
-
-    // Send initial game state
+    const id = generateId();
+    const color = Math.floor(Math.random() * 0xffffff);
+    const metadata = { id, color };
+    
+    console.log(`New client connected: ${id}`);
+    clients.set(ws, metadata);
+    
+    // Send the client their ID
     ws.send(JSON.stringify({
-        type: 'init',
-        playerId: playerId,
-        players: Array.from(players.entries()).map(([id, data]) => ({
-            id,
-            position: data.position
-        }))
+        type: 'connect',
+        id: id,
+        clients: [...clients.values()].filter(client => client.id !== id)
     }));
-
-    ws.on('message', (message) => {
-        const data = JSON.parse(message);
-        
-        switch(data.type) {
-            case 'position':
-                players.get(playerId).position = data.position;
-                players.get(playerId).rotation = data.rotation;
-                broadcast(playerId, {
-                    type: 'playerMove',
-                    playerId: playerId,
-                    position: data.position,
-                    rotation: data.rotation
-                });
-                break;
-            // Handle other message types...
+    
+    // Broadcast to all other clients that a new player joined
+    [...wss.clients]
+        .filter(client => client !== ws && client.readyState === WebSocket.OPEN)
+        .forEach(client => {
+            client.send(JSON.stringify({
+                type: 'newPlayer',
+                id: id
+            }));
+        });
+    
+    ws.on('message', (messageAsString) => {
+        try {
+            const message = JSON.parse(messageAsString);
+            const metadata = clients.get(ws);
+            
+            // Handle different message types
+            if (message.type === 'position') {
+                // Broadcast position to all other clients
+                [...wss.clients]
+                    .filter(client => client !== ws && client.readyState === WebSocket.OPEN)
+                    .forEach(client => {
+                        client.send(JSON.stringify({
+                            type: 'playerMove',
+                            id: metadata.id,
+                            position: message.position
+                        }));
+                    });
+            }
+        } catch (error) {
+            console.error('Error processing message:', error);
         }
     });
-
+    
     ws.on('close', () => {
-        console.log(`Player disconnected: ${playerId}`);
-        players.delete(playerId);
-        broadcast(playerId, {
-            type: 'playerLeft',
-            playerId: playerId
-        });
+        const metadata = clients.get(ws);
+        if (metadata) {
+            console.log(`Client disconnected: ${metadata.id}`);
+            clients.delete(ws);
+            
+            // Broadcast to all clients that a player left
+            [...wss.clients]
+                .filter(client => client.readyState === WebSocket.OPEN)
+                .forEach(client => {
+                    client.send(JSON.stringify({
+                        type: 'playerLeft',
+                        id: metadata.id
+                    }));
+                });
+        }
     });
 });
 
-function broadcast(senderId, data) {
-    players.forEach((player, id) => {
-        if (id !== senderId) {
-            player.ws.send(JSON.stringify(data));
-        }
-    });
+function generateId() {
+    return Math.random().toString(36).substring(2, 10);
 }
 
-function generatePlayerId() {
-    return Math.random().toString(36).substr(2, 9);
-} 
+// Railway will provide the PORT environment variable
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+}); 

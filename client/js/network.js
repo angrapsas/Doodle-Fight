@@ -1,62 +1,101 @@
 class NetworkManager {
     constructor(game) {
         this.game = game;
-        this.ws = new WebSocket('ws://your-ngrok-url.ngrok.io');
         this.playerId = null;
-
-        this.ws.onopen = () => {
-            console.log('Connected to server!');
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        
+        // Connect to the deployed server on Railway
+        // Railway provides a URL like https://your-app-name.railway.app
+        // For WebSockets, we need to use wss:// protocol
+        const serverUrl = 'wss://your-app-name.railway.app';
+        this.connectToServer(serverUrl);
+    }
+    
+    connectToServer(serverUrl) {
+        console.log(`Connecting to server: ${serverUrl}`);
+        this.socket = new WebSocket(serverUrl);
+        
+        this.socket.onopen = () => {
+            console.log('Connected to server');
+            this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
         };
-
-        this.ws.onerror = (error) => {
+        
+        this.socket.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                this.handleMessage(message);
+            } catch (error) {
+                console.error('Error parsing message:', error);
+            }
+        };
+        
+        this.socket.onclose = (event) => {
+            console.log(`Disconnected from server: ${event.code} ${event.reason}`);
+            
+            // Try to reconnect if not a normal closure and we haven't exceeded max attempts
+            if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+                this.reconnectAttempts++;
+                const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+                console.log(`Attempting to reconnect in ${delay/1000} seconds...`);
+                
+                setTimeout(() => {
+                    this.connectToServer(serverUrl);
+                }, delay);
+            }
+        };
+        
+        this.socket.onerror = (error) => {
             console.error('WebSocket error:', error);
         };
-
-        this.ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            
-            switch(data.type) {
-                case 'init':
-                    this.playerId = data.playerId;
-                    data.players.forEach(player => {
-                        if (player.id !== this.playerId) {
-                            this.game.addRemotePlayer(player.id, player.position);
-                        }
-                    });
-                    break;
-
-                case 'playerMove':
-                    if (data.playerId !== this.playerId) {
-                        this.game.updateRemotePlayer(data.playerId, data.position);
-                    }
-                    break;
-
-                case 'playerLeft':
-                    this.game.removeRemotePlayer(data.playerId);
-                    break;
-            }
-        };
-
-        // Send position updates
-        setInterval(() => {
-            if (this.game.player) {
-                this.sendPosition(this.game.player.mesh.position);
-            }
-        }, 50); // 20 updates per second
     }
-
+    
+    handleMessage(message) {
+        switch (message.type) {
+            case 'connect':
+                this.playerId = message.id;
+                console.log(`Connected with ID: ${this.playerId}`);
+                
+                // Add existing players
+                message.clients.forEach(client => {
+                    this.game.addRemotePlayer(client.id, new THREE.Vector3(0, 0, 0));
+                });
+                break;
+                
+            case 'newPlayer':
+                console.log(`New player joined: ${message.id}`);
+                this.game.addRemotePlayer(message.id, new THREE.Vector3(0, 0, 0));
+                break;
+                
+            case 'playerMove':
+                const position = new THREE.Vector3(
+                    message.position.x,
+                    message.position.y,
+                    message.position.z
+                );
+                this.game.updateRemotePlayer(message.id, position);
+                break;
+                
+            case 'playerLeft':
+                console.log(`Player left: ${message.id}`);
+                this.game.removeRemotePlayer(message.id);
+                break;
+                
+            default:
+                console.log(`Unknown message type: ${message.type}`);
+        }
+    }
+    
     sendPosition(position) {
-        this.ws.send(JSON.stringify({
-            type: 'position',
-            position: {
-                x: position.x,
-                y: position.y,
-                z: position.z
-            },
-            rotation: {
-                x: this.game.player.rotation.x,
-                y: this.game.player.rotation.y
-            }
-        }));
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify({
+                type: 'position',
+                position: {
+                    x: position.x,
+                    y: position.y,
+                    z: position.z
+                }
+            }));
+        }
     }
 } 

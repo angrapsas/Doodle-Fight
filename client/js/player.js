@@ -312,6 +312,11 @@ class Player {
         } else {
             this.mesh.visible = true;
         }
+
+        // Send position to server
+        if (this.game.network && !this.isRemote) {
+            this.game.network.sendPosition(this.mesh.position);
+        }
     }
 
     die() {

@@ -136,10 +136,10 @@ class Game {
         this.updateUI();
 
         // Initialize network manager
-        this.network = new NetworkManager(this);
+        // this.network = new NetworkManager(this);
 
         // Add methods for handling remote players
-        this.remotePlayers = new Map();
+        // this.remotePlayers = new Map();
     }
     
     animate() {
@@ -368,27 +368,27 @@ class Game {
     }
 
     // Add these methods to handle remote players
-    addRemotePlayer(id, position) {
-        const remotePlayer = new Player(this, true);  // Pass true for isRemote
-        remotePlayer.mesh.position.copy(position);
-        this.remotePlayers.set(id, remotePlayer);
-        this.scene.add(remotePlayer.mesh);
-    }
+    // addRemotePlayer(id, position) {
+    //     const remotePlayer = new Player(this, true);  // Pass true for isRemote
+    //     remotePlayer.mesh.position.copy(position);
+    //     this.remotePlayers.set(id, remotePlayer);
+    //     this.scene.add(remotePlayer.mesh);
+    // }
 
-    updateRemotePlayer(id, position) {
-        const remotePlayer = this.remotePlayers.get(id);
-        if (remotePlayer) {
-            remotePlayer.mesh.position.copy(position);
-        }
-    }
+    // updateRemotePlayer(id, position) {
+    //     const remotePlayer = this.remotePlayers.get(id);
+    //     if (remotePlayer) {
+    //         remotePlayer.mesh.position.copy(position);
+    //     }
+    // }
 
-    removeRemotePlayer(id) {
-        const remotePlayer = this.remotePlayers.get(id);
-        if (remotePlayer) {
-            this.scene.remove(remotePlayer.mesh);
-            this.remotePlayers.delete(id);
-        }
-    }
+    // removeRemotePlayer(id) {
+    //     const remotePlayer = this.remotePlayers.get(id);
+    //     if (remotePlayer) {
+    //         this.scene.remove(remotePlayer.mesh);
+    //         this.remotePlayers.delete(id);
+    //     }
+    // }
 }
 
 // Start the game when the page loads

@@ -1,0 +1,11 @@
+{
+  "name": "alien-bounce",
+  "version": "1.0.0",
+  "description": "A 3D platformer game",
+  "scripts": {
+    "start": "serve ."
+  },
+  "dependencies": {
+    "serve": "^14.0.0"
+  }
+} 
