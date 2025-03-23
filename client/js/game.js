@@ -132,14 +132,31 @@ class Game {
         this.respawnPoints = [];
         this.activePlayers = 0;
         
-        // Add UI elements for health
+        // Add player count tracking
+        this.playerCount = 1; // Start with just the local player
+        
+        // Update UI elements
         this.updateUI();
 
         // Initialize network manager
-        // this.network = new NetworkManager(this);
+        this.network = new NetworkManager(this);
 
         // Add methods for handling remote players
-        // this.remotePlayers = new Map();
+        this.remotePlayers = new Map();
+
+        // Add debug info for multiplayer
+        this.debugElement = document.createElement('div');
+        this.debugElement.style.position = 'absolute';
+        this.debugElement.style.bottom = '10px';
+        this.debugElement.style.left = '10px';
+        this.debugElement.style.color = 'white';
+        this.debugElement.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        this.debugElement.style.padding = '5px';
+        this.debugElement.style.fontFamily = 'monospace';
+        document.getElementById('ui-overlay').appendChild(this.debugElement);
+        
+        // Update debug info every second
+        setInterval(() => this.updateDebugInfo(), 1000);
     }
     
     animate() {
@@ -341,6 +358,12 @@ class Game {
             uiOverlay.removeChild(uiOverlay.firstChild);
         }
         
+        // Update player count
+        const playersElement = document.getElementById('players-remaining');
+        if (playersElement) {
+            playersElement.textContent = `Players: ${this.playerCount}`;
+        }
+        
         // Only add height display and death message
         const heightElement = document.createElement('div');
         heightElement.id = 'height-gained';
@@ -367,28 +390,55 @@ class Game {
         uiOverlay.appendChild(deathMessage);
     }
 
-    // Add these methods to handle remote players
-    // addRemotePlayer(id, position) {
-    //     const remotePlayer = new Player(this, true);  // Pass true for isRemote
-    //     remotePlayer.mesh.position.copy(position);
-    //     this.remotePlayers.set(id, remotePlayer);
-    //     this.scene.add(remotePlayer.mesh);
-    // }
+    // Update these methods to handle player count
+    addRemotePlayer(id, position) {
+        const remotePlayer = new Player(this, true);  // Pass true for isRemote
+        remotePlayer.mesh.position.copy(position);
+        this.remotePlayers.set(id, remotePlayer);
+        this.scene.add(remotePlayer.mesh);
+        
+        // Increment player count and update UI
+        this.playerCount = 1 + this.remotePlayers.size;
+        this.updateUI();
+    }
 
-    // updateRemotePlayer(id, position) {
-    //     const remotePlayer = this.remotePlayers.get(id);
-    //     if (remotePlayer) {
-    //         remotePlayer.mesh.position.copy(position);
-    //     }
-    // }
+    removeRemotePlayer(id) {
+        const remotePlayer = this.remotePlayers.get(id);
+        if (remotePlayer) {
+            this.scene.remove(remotePlayer.mesh);
+            this.remotePlayers.delete(id);
+            
+            // Decrement player count and update UI
+            this.playerCount = 1 + this.remotePlayers.size;
+            this.updateUI();
+        }
+    }
 
-    // removeRemotePlayer(id) {
-    //     const remotePlayer = this.remotePlayers.get(id);
-    //     if (remotePlayer) {
-    //         this.scene.remove(remotePlayer.mesh);
-    //         this.remotePlayers.delete(id);
-    //     }
-    // }
+    updateDebugInfo() {
+        if (!this.debugElement) return;
+        
+        const connStatus = this.network && this.network.socket ? 
+            (this.network.socket.readyState === WebSocket.OPEN ? 'Connected' : 'Disconnected') : 
+            'No Network';
+        
+        const playerIds = this.remotePlayers ? 
+            Array.from(this.remotePlayers.keys()).join(', ') : 
+            'None';
+        
+        this.debugElement.innerHTML = `
+            Network: ${connStatus}<br>
+            Your ID: ${this.network ? this.network.playerId || 'Unknown' : 'N/A'}<br>
+            Remote Players: ${this.remotePlayers.size}<br>
+            IDs: ${playerIds}
+        `;
+    }
+
+    updateRemotePlayer(id, position) {
+        const remotePlayer = this.remotePlayers.get(id);
+        if (remotePlayer) {
+            remotePlayer.mesh.position.copy(position);
+        }
+    }
 }
 
 // Start the game when the page loads

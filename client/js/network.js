@@ -8,7 +8,7 @@ class NetworkManager {
         // Connect to the deployed server on Railway
         // Railway provides a URL like https://your-app-name.railway.app
         // For WebSockets, we need to use wss:// protocol
-        const serverUrl = 'wss://your-railway-app-name.railway.app';
+        const serverUrl = 'wss://your-actual-railway-app.railway.app';
         this.connectToServer(serverUrl);
     }
     
