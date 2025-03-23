@@ -147,8 +147,8 @@ class Game {
         // Add debug info for multiplayer
         this.debugElement = document.createElement('div');
         this.debugElement.style.position = 'absolute';
-        this.debugElement.style.bottom = '10px';
-        this.debugElement.style.left = '10px';
+        this.debugElement.style.top = '60px';  // Move down below height stats
+        this.debugElement.style.left = '20px'; // Same left position as height stats
         this.debugElement.style.color = 'white';
         this.debugElement.style.backgroundColor = 'rgba(0,0,0,0.5)';
         this.debugElement.style.padding = '5px';
@@ -364,7 +364,7 @@ class Game {
             playersElement.textContent = `Players: ${this.playerCount}`;
         }
         
-        // Only add height display and death message
+        // Add height display
         const heightElement = document.createElement('div');
         heightElement.id = 'height-gained';
         heightElement.style.color = 'white';
@@ -374,6 +374,18 @@ class Game {
         heightElement.style.fontSize = '18px';
         uiOverlay.appendChild(heightElement);
 
+        // Add debug element below height display
+        this.debugElement = document.createElement('div');
+        this.debugElement.style.position = 'absolute';
+        this.debugElement.style.top = '60px';
+        this.debugElement.style.left = '20px';
+        this.debugElement.style.color = 'white';
+        this.debugElement.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        this.debugElement.style.padding = '5px';
+        this.debugElement.style.fontFamily = 'monospace';
+        uiOverlay.appendChild(this.debugElement);
+        
+        // Add death message
         const deathMessage = document.createElement('div');
         deathMessage.id = 'death-message';
         deathMessage.style.position = 'absolute';
@@ -388,6 +400,9 @@ class Game {
         deathMessage.style.padding = '20px';
         deathMessage.style.borderRadius = '10px';
         uiOverlay.appendChild(deathMessage);
+        
+        // Update debug info immediately
+        this.updateDebugInfo();
     }
 
     // Update these methods to handle player count
