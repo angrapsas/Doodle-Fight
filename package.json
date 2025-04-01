@@ -1,11 +1,14 @@
 {
   "name": "alien-bounce",
   "version": "1.0.0",
-  "description": "A 3D platformer game",
+  "description": "A multiplayer alien bounce game",
+  "main": "index.js",
   "scripts": {
-    "start": "serve ."
+    "start": "cd server && npm start",
+    "dev": "cd server && npm run dev"
   },
   "dependencies": {
-    "serve": "^14.0.0"
+    "express": "^4.18.2",
+    "ws": "^8.13.0"
   }
 } 

@@ -6,7 +6,7 @@ const path = require('path');
 
 const app = express();
 app.use(cors({
-  origin: '*', // In production, you might want to restrict this
+  origin: '*', // In production, you might want to restrict this to your Vercel domain
   methods: ['GET', 'POST']
 }));
 
@@ -23,6 +23,9 @@ const wss = new WebSocket.Server({ server });
 
 // Store connected clients
 const clients = new Map();
+
+console.log('Environment variables:');
+console.log(JSON.stringify(process.env, null, 2));
 
 console.log('WebSocket server started on port 3000');
 
@@ -101,4 +104,9 @@ function generateId() {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-}); 
+});
+
+console.log('===========================================');
+console.log(`Server URL: https://${process.env.RAILWAY_STATIC_URL || 'unknown'}`);
+console.log(`WebSocket URL: wss://${process.env.RAILWAY_STATIC_URL || 'unknown'}`);
+console.log('==========================================='); 

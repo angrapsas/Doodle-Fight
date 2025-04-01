@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <div id="status">Connecting...</div>
+    <script>
+        const status = document.getElementById('status');
+        try {
+            const socket = new WebSocket('wss://doodle-fight-production.up.railway.app');
+            
+            socket.onopen = () => {
+                status.textContent = 'Connected!';
+                status.style.color = 'green';
+            };
+            
+            socket.onclose = () => {
+                status.textContent = 'Disconnected';
+                status.style.color = 'red';
+            };
+            
+            socket.onerror = (error) => {
+                status.textContent = 'Error: ' + error;
+                status.style.color = 'red';
+            };
+        } catch (error) {
+            status.textContent = 'Failed to create connection: ' + error.message;
+            status.style.color = 'red';
+        }
+    </script>
+</body>
+</html> 
