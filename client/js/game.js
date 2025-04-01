@@ -157,6 +157,22 @@ class Game {
         
         // Update debug info every second
         setInterval(() => this.updateDebugInfo(), 1000);
+
+        console.log("Testing direct WebSocket connection...");
+        try {
+            const testSocket = new WebSocket('wss://doodle-fight-production.up.railway.app');
+            testSocket.onopen = () => {
+                console.log("TEST CONNECTION SUCCESSFUL!");
+                document.body.style.border = "5px solid green";
+            };
+            testSocket.onerror = (error) => {
+                console.error("TEST CONNECTION FAILED:", error);
+                document.body.style.border = "5px solid red";
+            };
+        } catch (error) {
+            console.error("TEST CONNECTION ERROR:", error);
+            document.body.style.border = "5px solid orange";
+        }
     }
     
     animate() {
