@@ -4,10 +4,21 @@ const WebSocket = require('ws');
 const cors = require('cors');
 const path = require('path');
 
+console.log('Server starting up...');
+
 const app = express();
+
+// Add HTTP logging middleware FIRST
+app.use((req, res, next) => {
+  console.log(`HTTP ${req.method} request for ${req.url} from ${req.ip}`);
+  next();
+});
+
+// Then add CORS
 app.use(cors({
-  origin: '*', // In production, you might want to restrict this to your Vercel domain
-  methods: ['GET', 'POST']
+  origin: ['https://doodle-fight.vercel.app', 'https://your-vercel-app.vercel.app', '*'],
+  methods: ['GET', 'POST'],
+  credentials: true
 }));
 
 // Serve static files if needed
@@ -29,7 +40,9 @@ console.log(JSON.stringify(process.env, null, 2));
 
 console.log('WebSocket server started on port 3000');
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+    console.log('WebSocket connection received from:', req.headers.origin);
+    console.log('Connection headers:', req.headers);
     const id = generateId();
     const color = Math.floor(Math.random() * 0xffffff);
     const metadata = { id, color };
